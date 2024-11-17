@@ -27,13 +27,15 @@ class MainWindow(QMainWindow):
 
     def initUI(self):
         global ok
-        self.xs, ok_press = QInputDialog.getInt(self, "Ширина поля", "Введите ширину поля", 10, 1, 100, 1)
+        self.xs, ok_press = QInputDialog.getInt(self, "Ширина поля", f"Введите ширину поля (max - {2000 // self.cs})", 1000 // self.cs, 1, 2000 // self.cs, 1)
         if not ok_press:
             ok = 0
+            self.xs, self.ys = 0, 0
         else:
-            self.ys, ok_press = QInputDialog.getInt(self, "Высота поля", "Введите высоту поля", 10, 1, 100, 1)
+            self.ys, ok_press = QInputDialog.getInt(self, "Высота поля", f"Введите высоту поля (max - {850 // self.cs})", 500 // self.cs, 1, 850 // self.cs, 1)
             if not ok_press:
                 ok = 0
+                self.ys = 0
 
         self.field = np.array([[0 for _ in range(self.ys)] for _ in range(self.xs)], dtype=np.byte)
 
