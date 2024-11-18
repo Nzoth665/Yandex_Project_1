@@ -17,6 +17,8 @@ class MainWindow(QMainWindow):
         self.startWindow = a1
         self.cs = cs
         self.rule = rule
+        self.generation = 0
+        self.setWindowTitle(f"Прошло {self.generation} поколений.")
 
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.time)
@@ -95,10 +97,15 @@ class MainWindow(QMainWindow):
 
     def mix(self):
         self.field = np.random.randint(0, 2, (self.xs, self.ys))
+        self.generation = 0
+        self.setWindowTitle(f"Прошло {self.generation} поколений.")
         self.update()
 
     def clean(self):
         self.field *= 0
+        self.generation = 0
+        self.setWindowTitle(f"Прошло {self.generation} поколений.")
+        self.stop()
         self.update()
 
     def onecell(self, a):
@@ -123,6 +130,8 @@ class MainWindow(QMainWindow):
 
     def step(self):
         self.field = self.onecell(self.field)
+        self.generation += 1
+        self.setWindowTitle(f"Прошло {self.generation} поколений.")
         self.update()
 
     def start(self):
