@@ -254,8 +254,9 @@ class Saves(QWidget):
         self.sbtn.clicked.connect(self.safe)
         self.dbtn.clicked.connect(self.delete)
 
-    def safe(self, tab, values):
-        self.cur.execute(f"INSERT INTO {tab} VALUES({values})")
+    def safe(self, tab, cor, values):
+        mid = self.cur.execute(f"SELECT MAX(id) FROM {tab}").fetchall()[0][0]
+        self.cur.execute(f"INSERT INTO {tab}(id, {cor}) VALUES({mid + 1}, {values})")
         self.con.commit()
         self.update_table()
 
@@ -280,7 +281,7 @@ class Safes_rules(Saves):
         name, ok_press = QInputDialog.getText(self, "Название правила",
                                               "Выбирете название правилу которое у вас стоит на данный момент")
         if ok_press:
-            super().safe("save_rules(title, rule)", f"'{name}', '{self.w.rule}'")
+            super().safe("save_rules", "title, rule", f"'{name}', '{self.w.rule}'")
 
     def delete(self, **kwargs):
         id, ok_press = QInputDialog.getInt(self, "Удаление правила", "Напишите id правила которое вы хотите удалить")
