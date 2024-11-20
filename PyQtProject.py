@@ -1,11 +1,10 @@
 import sys
 import sqlite3
-from copy import deepcopy
 import numpy as np
 
 from PyQt6 import uic
 from PyQt6.QtGui import QPainter, QColor
-from PyQt6.QtWidgets import QApplication, QMainWindow, QWidget
+from PyQt6.QtWidgets import QApplication, QMainWindow, QWidget, QTableWidgetItem
 from PyQt6.QtWidgets import QInputDialog
 from PyQt6.QtCore import Qt, QTimer
 
@@ -74,7 +73,7 @@ class MainWindow(QMainWindow):
         self.lfb.clicked.connect(self.lfbf)
         self.sfb.clicked.connect(self.sfbf)
 
-    def ruleUpdayt(self):
+    def ruleUpdate(self):
         born = self.born.buttons()
         survival = self.survival.buttons()
         for i in born:
@@ -144,14 +143,16 @@ class MainWindow(QMainWindow):
         cur = sqlite3.connect("project.db").cursor()
         new_rule, ok_pressed = QInputDialog.getItem(
     self, "Правило", "Выбирете новое правило",
-    tuple(map(lambda x: x[0], cur.execute(f"SELECT title FROM save_rules").fetchall())), 1, False)
+    tuple(map(lambda x: x[0], cur.execute(f"SELECT title FROM save_rules ORDER BY id").fetchall())), 0, False)
         if ok_pressed:
             self.rule = cur.execute(f'SELECT rule FROM save_rules WHERE title = "{new_rule}"').fetchall()[0][0]
-            self.ruleUpdayt()
+            self.ruleUpdate()
+            self.update()
         cur.close()
 
     def srbf(self):
-        pass
+        self.safes = Safes_rules()
+        self.safes.show()
 
     def lfbf(self):
         pass
@@ -224,6 +225,49 @@ class StartWindow(QWidget):
         if a0.key() == Qt.Key.Key_Escape:
             self.close()
 
+
+class Safes_rules(QWidget):
+    def __init__(self):
+        super().__init__()
+        uic.loadUi("safes.ui", self)
+        self.initUI()
+        self.buttons_init()
+
+    def initUI(self):
+        self.con = sqlite3.connect("project.db")
+        self.cur = self.con.cursor()
+        self.tableWidget.setColumnCount(2)
+        self.update_table()
+
+    def update_table(self):
+        r = self.cur.execute(f"SELECT id, title FROM save_rules ORDER BY id").fetchall()
+        self.tableWidget.setRowCount(len(r))
+        for i in range(len(r)):
+            self.tableWidget.setItem(i, 0, QTableWidgetItem(str(r[i][0])))
+            self.tableWidget.setItem(i, 1, QTableWidgetItem(str(r[i][1])))
+        self.tableWidget.resizeColumnsToContents()
+
+
+    def buttons_init(self):
+        self.sbtn.clicked.connect(self.safe)
+        self.dbtn.clicked.connect(self.delete)
+
+    def safe(self):
+        name, ok_press = QInputDialog.getText(self, "Название правила", "Выбирете название правилу которое у вас стоит на данный момент")
+        if ok_press:
+            self.cur.execute(f"INSERT INTO save_rules(title, rule) VALUES('{name}', '000000000000000000')")
+            self.con.commit()
+            self.update_table()
+
+    def delete(self):
+        id, ok_press = QInputDialog.getText(self, "Удаление правила", "Напишите id правила которое вы хотите удалить")
+        if ok_press and id > 5:
+            self.cur.execute(f"DELETE FROM save_rules WHERE id = {id}")
+            self.con.commit()
+            self.update_table()
+
+    def closeEvent(self, event):
+        pass
 
 ok = 1
 
