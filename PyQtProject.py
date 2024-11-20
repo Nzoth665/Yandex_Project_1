@@ -28,12 +28,15 @@ class MainWindow(QMainWindow):
 
     def initUI(self):
         global ok
-        self.xs, ok_press = QInputDialog.getInt(self, "Ширина поля", f"Введите ширину поля (max - {2000 // self.cs})", 1000 // self.cs, 1, 2000 // self.cs, 1)
+        self.xs, ok_press = QInputDialog.getInt(self, "Ширина поля", f"Введите ширину поля (max - {2000 // self.cs})",
+                                                1000 // self.cs, 1, 2000 // self.cs, 1)
         if not ok_press:
             ok = 0
             self.xs, self.ys = 0, 0
         else:
-            self.ys, ok_press = QInputDialog.getInt(self, "Высота поля", f"Введите высоту поля (max - {850 // self.cs})", 500 // self.cs, 1, 850 // self.cs, 1)
+            self.ys, ok_press = QInputDialog.getInt(self, "Высота поля",
+                                                    f"Введите высоту поля (max - {850 // self.cs})", 500 // self.cs, 1,
+                                                    850 // self.cs, 1)
             if not ok_press:
                 ok = 0
                 self.ys = 0
@@ -142,8 +145,8 @@ class MainWindow(QMainWindow):
     def lrbf(self):
         cur = sqlite3.connect("project.db").cursor()
         new_rule, ok_pressed = QInputDialog.getItem(
-    self, "Правило", "Выбирете новое правило",
-    tuple(map(lambda x: x[0], cur.execute(f"SELECT title FROM save_rules ORDER BY id").fetchall())), 0, False)
+            self, "Правило", "Выбирете новое правило",
+            tuple(map(lambda x: x[0], cur.execute(f"SELECT title FROM save_rules ORDER BY id").fetchall())), 0, False)
         if ok_pressed:
             self.rule = cur.execute(f'SELECT rule FROM save_rules WHERE title = "{new_rule}"').fetchall()[0][0]
             self.ruleUpdate()
@@ -151,7 +154,7 @@ class MainWindow(QMainWindow):
         cur.close()
 
     def srbf(self):
-        self.safes = Safes_rules()
+        self.safes = Safes_rules(self)
         self.safes.show()
 
     def lfbf(self):
@@ -226,48 +229,64 @@ class StartWindow(QWidget):
             self.close()
 
 
-class Safes_rules(QWidget):
-    def __init__(self):
+class Saves(QWidget):
+    def __init__(self, x):
         super().__init__()
         uic.loadUi("safes.ui", self)
-        self.initUI()
+        self.initUI(x)
         self.buttons_init()
 
-    def initUI(self):
+    def initUI(self, x):
         self.con = sqlite3.connect("project.db")
         self.cur = self.con.cursor()
-        self.tableWidget.setColumnCount(2)
+        self.tableWidget.setColumnCount(x)
         self.update_table()
 
-    def update_table(self):
-        r = self.cur.execute(f"SELECT id, title FROM save_rules ORDER BY id").fetchall()
+    def update_table(self, tab, cor):
+        r = self.cur.execute(f"SELECT {cor} FROM {tab} ORDER BY id").fetchall()
         self.tableWidget.setRowCount(len(r))
         for i in range(len(r)):
-            self.tableWidget.setItem(i, 0, QTableWidgetItem(str(r[i][0])))
-            self.tableWidget.setItem(i, 1, QTableWidgetItem(str(r[i][1])))
+            for j, e in enumerate(r[i]):
+                self.tableWidget.setItem(i, j, QTableWidgetItem(str(e)))
         self.tableWidget.resizeColumnsToContents()
-
 
     def buttons_init(self):
         self.sbtn.clicked.connect(self.safe)
         self.dbtn.clicked.connect(self.delete)
 
-    def safe(self):
-        name, ok_press = QInputDialog.getText(self, "Название правила", "Выбирете название правилу которое у вас стоит на данный момент")
-        if ok_press:
-            self.cur.execute(f"INSERT INTO save_rules(title, rule) VALUES('{name}', '000000000000000000')")
-            self.con.commit()
-            self.update_table()
+    def safe(self, tab, values):
+        self.cur.execute(f"INSERT INTO {tab} VALUES({values})")
+        self.con.commit()
+        self.update_table()
 
-    def delete(self):
-        id, ok_press = QInputDialog.getText(self, "Удаление правила", "Напишите id правила которое вы хотите удалить")
-        if ok_press and id > 5:
-            self.cur.execute(f"DELETE FROM save_rules WHERE id = {id}")
-            self.con.commit()
-            self.update_table()
+    def delete(self, tab, id):
+        self.cur.execute(f"DELETE FROM {tab} WHERE id = {id}")
+        self.con.commit()
+        self.update_table()
 
     def closeEvent(self, event):
         pass
+
+
+class Safes_rules(Saves):
+    def __init__(self, w):
+        super().__init__(2)
+        self.w = w
+
+    def update_table(self, **kwargs):
+        super().update_table("save_rules", "id, title")
+
+    def safe(self, **kwargs):
+        name, ok_press = QInputDialog.getText(self, "Название правила",
+                                              "Выбирете название правилу которое у вас стоит на данный момент")
+        if ok_press:
+            super().safe("save_rules(title, rule)", f"'{name}', '{self.w.rule}'")
+
+    def delete(self, **kwargs):
+        id, ok_press = QInputDialog.getInt(self, "Удаление правила", "Напишите id правила которое вы хотите удалить")
+        if ok_press and id > 5:
+            super().delete("save_rules", id)
+
 
 ok = 1
 
