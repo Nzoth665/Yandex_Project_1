@@ -154,14 +154,15 @@ class MainWindow(QMainWindow):
         cur.close()
 
     def srbf(self):
-        self.safes = Safes_rules(self)
-        self.safes.show()
+        self.safesr = Safes_rules(self)
+        self.safesr.show()
 
     def lfbf(self):
         pass
 
     def sfbf(self):
-        pass
+        self.safesf = Safes_figures(self)
+        self.safesf.show()
 
     def time(self):
         if self.q != 1000 // self.speed.value():
@@ -256,6 +257,8 @@ class Saves(QWidget):
 
     def safe(self, tab, cor, values):
         mid = self.cur.execute(f"SELECT MAX(id) FROM {tab}").fetchall()[0][0]
+        if mid is None:
+            mid = 0
         self.cur.execute(f"INSERT INTO {tab}(id, {cor}) VALUES({mid + 1}, {values})")
         self.con.commit()
         self.update_table()
@@ -287,6 +290,66 @@ class Safes_rules(Saves):
         id, ok_press = QInputDialog.getInt(self, "Удаление правила", "Напишите id правила которое вы хотите удалить")
         if ok_press and id > 5:
             super().delete("save_rules", id)
+
+
+class Safes_figures(Saves):
+    def __init__(self, w):
+        super().__init__(7)
+        self.w = w
+
+    def update_table(self, **kwargs):
+        r = self.cur.execute(
+            f"SELECT save_figures.id, save_figures.title, figures_type.title, save_rules.title, save_figures.size_x, save_figures.size_y, save_figures.parameter FROM save_figures INNER JOIN figures_type INNER JOIN save_rules ON save_rules.id = save_figures.necessary_rule AND figures_type.id = save_figures.type ORDER BY save_figures.id").fetchall()
+        self.tableWidget.setRowCount(len(r))
+        for i in range(len(r)):
+            for j, e in enumerate(r[i]):
+                self.tableWidget.setItem(i, j, QTableWidgetItem(str(e)))
+        self.tableWidget.resizeColumnsToContents()
+
+    def safe(self, **kwargs):
+        name, ok_press = QInputDialog.getText(self, "Название фигуры",
+                                              "Выбирете название фигуре которая у вас находится на экране")
+        if ok_press:
+            types, ok_press = QInputDialog.getItem(self, "Тип фигуры", "Выбирете тип фигуры",
+                                                   tuple(map(lambda x: x[0], self.cur.execute(
+                                                       f"SELECT title FROM figures_type ORDER BY id").fetchall())), 0,
+                                                   False)
+            if ok_press:
+                type = self.cur.execute(f"SELECT id FROM figures_type WHERE title = '{types}'").fetchall()[0][0]
+                if self.cur.execute(f"SELECT parametr_title FROM figures_type WHERE title = '{types}'").fetchall()[0][
+                    0] is not None:
+                    parametr, ok_press = QInputDialog.getInt(self, "Параметр фигуры", "Напишите параметр фигуры", 0, 0,
+                                                             1000, 1)
+                else:
+                    parametr, ok_press = None, True
+                if ok_press:
+                    f = self.load_figure()
+                    x = len(f[0])
+                    y = len(f)
+                    fig = ""
+                    for i in f:
+                        for j in i:
+                            fig += str(j)
+                    super().safe("save_figures", "title, type, necessary_rule, size_x, size_y, parameter, figure",
+                                 f"'{name}', '{type}', '{self.cur.execute(f'SELECT id FROM save_rules WHERE rule = "{self.w.rule}"').fetchall()[0][0]}', '{x}', '{y}', '{parametr}', '{fig}'")
+
+    def load_figure(self):
+        x = len(self.w.field)
+        y = len(self.w.field[0])
+        up, down, right, left = x, 0, 0, y
+        for i in range(x):
+            for j in range(y):
+                if self.w.field[i, j] != 0:
+                    up = min(j, up)
+                    down = max(j, down)
+                    right = max(i, right)
+                    left = min(i, left)
+        return self.w.field[up:down + 1, left:right + 1]
+
+    def delete(self, **kwargs):
+        id, ok_press = QInputDialog.getInt(self, "Удаление фигуры", "Напишите id фигуры которое вы хотите удалить")
+        if ok_press:
+            super().delete("save_figures", id)
 
 
 ok = 1
