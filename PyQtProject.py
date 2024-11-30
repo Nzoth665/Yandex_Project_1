@@ -161,6 +161,7 @@ class MainWindow(QMainWindow):
         cur = sqlite3.connect("project.db").cursor()
         name, ok_press = QInputDialog.getItem(self, "Название фигуры", "Выбирете название фигуре, которую вы хотите загрузить.", tuple(map(lambda x: x[0], cur.execute(f"SELECT title FROM save_figures ORDER BY id").fetchall())), 0, False)
         if ok_press:
+            self.clean()
             f, x, y = cur.execute(f'SELECT figure, size_x, size_y FROM save_figures WHERE title = "{name}"').fetchall()[0]
             n = np.array([int(i) for i in f]).reshape(y, x)
             for yi in range(y):
