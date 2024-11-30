@@ -344,6 +344,7 @@ class Safes_figures(Saves):
                     down = max(j, down)
                     right = max(i, right)
                     left = min(i, left)
+        print(self.w.field[up:down + 1, left:right + 1])
         return self.w.field[up:down + 1, left:right + 1]
 
     def delete(self, **kwargs):
