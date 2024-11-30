@@ -158,7 +158,15 @@ class MainWindow(QMainWindow):
         self.safesr.show()
 
     def lfbf(self):
-        pass
+        cur = sqlite3.connect("project.db").cursor()
+        name, ok_press = QInputDialog.getItem(self, "Название фигуры", "Выбирете название фигуре, которую вы хотите загрузить.", tuple(map(lambda x: x[0], cur.execute(f"SELECT title FROM save_figures ORDER BY id").fetchall())), 0, False)
+        if ok_press:
+            f, x, y = cur.execute(f'SELECT figure, size_x, size_y FROM save_figures WHERE title = "{name}"').fetchall()[0]
+            n = np.array([int(i) for i in f]).reshape(y, x)
+            for yi in range(y):
+                for xi in range(x):
+                    self.field[yi, xi] = n[yi, xi]
+        cur.close()
 
     def sfbf(self):
         self.safesf = Safes_figures(self)
@@ -288,7 +296,7 @@ class Safes_rules(Saves):
 
     def delete(self, **kwargs):
         id, ok_press = QInputDialog.getInt(self, "Удаление правила", "Напишите id правила которое вы хотите удалить")
-        if ok_press and id > 5:
+        if ok_press and id > 6:
             super().delete("save_rules", id)
 
 
@@ -344,8 +352,8 @@ class Safes_figures(Saves):
                     down = max(j, down)
                     right = max(i, right)
                     left = min(i, left)
-        print(self.w.field[up:down + 1, left:right + 1])
-        return self.w.field[up:down + 1, left:right + 1]
+        #print(self.w.field[left:right + 1, up:down + 1])
+        return self.w.field[left:right + 1, up:down + 1]
 
     def delete(self, **kwargs):
         id, ok_press = QInputDialog.getInt(self, "Удаление фигуры", "Напишите id фигуры которое вы хотите удалить")
